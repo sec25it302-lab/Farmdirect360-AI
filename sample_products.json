@@ -1,0 +1,5 @@
+[
+  { "id": 1, "product": "tomato", "qty_kg": 120, "price_per_kg": 30, "farmer": "Murugan", "location": "Pollachi" },
+  { "id": 2, "product": "banana", "qty_kg": 60,  "price_per_kg": 42, "farmer": "Selvi",   "location": "Udumalpet" },
+  { "id": 3, "product": "onion",  "qty_kg": 200, "price_per_kg": 34, "farmer": "Kannan",  "location": "Palladam" }
+]

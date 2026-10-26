@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FarmDirect 360 AI</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f8f1;--card:#fff;--tx:#1b2a1b;--mu:#5d6f5d;--pr:#2e7d32;--ac:#f9a825;--bd:#dce6d8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a12;--card:#1c271c;--tx:#e8f0e6;--mu:#9bb09a;--pr:#66bb6a;--ac:#ffca28;--bd:#2c3a2c}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;max-width:560px;margin:0 auto;padding:12px 12px 40px}
+h1{font-size:20px;margin:4px 0}h2{font-size:16px;margin:14px 0 8px}
+.sub{color:var(--mu);font-size:13px;margin:0 0 10px}
+.tabs{display:flex;gap:6px;margin:10px 0}.tabs button{flex:1;padding:10px 4px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font-size:14px}
+.tabs button.on{background:var(--pr);color:#fff;border-color:var(--pr)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:8px 0}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:15px;margin:4px 0}
+.btn{padding:10px 14px;border:0;border-radius:8px;background:var(--pr);color:#fff;font-size:15px}.btn.alt{background:var(--ac);color:#222}.btn.sm{padding:6px 10px;font-size:13px}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.mic{width:64px;height:64px;border-radius:50%;font-size:28px;border:0;background:var(--ac)}.mic.rec{background:#e53935}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:var(--bd)}
+.alert{background:#fff3cd;color:#5c4400;border-radius:10px;padding:10px;font-size:13px;margin:8px 0}
+.ai{border-left:4px solid var(--pr)}
+.steps{display:flex;gap:4px;margin-top:6px;font-size:12px}.steps span{flex:1;text-align:center;padding:4px;border-radius:6px;background:var(--bd)}.steps .d{background:var(--pr);color:#fff}
+</style></head><body>
+<h1>🌾 FarmDirect 360 AI</h1>
+<p class="sub">Farm-to-customer marketplace · prototype demo</p>
+<div class="alert">⛈️ Weather alert (Coimbatore): Heavy rain expected in 2 days. Harvest and dispatch leafy crops early.</div>
+<div class="tabs" id="tabs"></div>
+<div id="view"></div>
+<script>
+var M={tomato:{ta:"தக்காளி",p:28,e:"🍅"},onion:{ta:"வெங்காயம்",p:35,e:"🧅"},banana:{ta:"வாழை",p:40,e:"🍌"},brinjal:{ta:"கத்தரி",p:30,e:"🍆"},coconut:{ta:"தேங்காய்",p:25,e:"🥥"},rice:{ta:"அரிசி",p:52,e:"🌾"}};
+var S={tab:"farmer",products:[
+{id:1,k:"tomato",qty:120,price:30,farmer:"Murugan",loc:"Pollachi"},
+{id:2,k:"banana",qty:60,price:42,farmer:"Selvi",loc:"Udumalpet"},
+{id:3,k:"onion",qty:200,price:34,farmer:"Kannan",loc:"Palladam"}],
+cart:{},orders:[],draft:null,msg:"",said:""};
+var STEPS=["Placed","Picked up","Delivered"];
+try{var sv=localStorage.getItem("fd360");if(sv){var o=JSON.parse(sv);S.products=o.products||S.products;S.orders=o.orders||[]}}catch(e){}
+function save(){try{localStorage.setItem("fd360",JSON.stringify({products:S.products,orders:S.orders}))}catch(e){}}
+function $(i){return document.getElementById(i)}
+function parse(t){t=(t||"").toLowerCase();var k=null;
+for(var key in M){if(t.indexOf(key)>-1||t.indexOf(M[key].ta)>-1){k=key;break}}
+var n=t.match(/\d+/g)||[];
+return k?{k:k,qty:+n[0]||10,price:n[1]?+n[1]:null}:null}
+function rec(k){var p=M[k].p;return{lo:Math.round(p*0.95),fair:Math.round(p*1.05),hi:Math.round(p*1.12)}}
+function listen(){var R=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!R){S.msg="Mic not supported here. Use the demo phrase button.";render();return}
+var r=new R();r.lang="ta-IN";r.onresult=function(e){S.said=e.results[0][0].transcript;S.draft=parse(S.said);S.msg=S.draft?"":"Product not recognised. Try again.";render()};
+r.onerror=function(){S.msg="Mic blocked. Use the demo phrase button.";render()};
+$("mic").classList.add("rec");r.start()}
+function demo(){S.said="தக்காளி 50 கிலோ 30 ரூபாய்";S.draft=parse(S.said);S.msg="";render()}
+function addP(){var d=S.draft;if(!d)return;var price=+$("pp").value||d.price||rec(d.k).fair;
+S.products.unshift({id:Date.now(),k:d.k,qty:+$("pq").value||d.qty,price:price,farmer:"You (Demo Farmer)",loc:"Coimbatore"});
+S.draft=null;S.said="";S.msg="✅ Product listed!";save();render()}
+function addC(id){S.cart[id]=(S.cart[id]||0)+1;render()}
+function order(){var ids=Object.keys(S.cart);if(!ids.length)return;
+ids.forEach(function(id){var p=S.products.filter(function(x){return x.id==id})[0];if(!p)return;
+var q=Math.min(S.cart[id],p.qty);p.qty-=q;
+S.orders.push({id:Date.now()+Number(id)%1000,k:p.k,qty:q,total:q*p.price,farmer:p.farmer,loc:p.loc,st:0,paid:true})});
+S.cart={};S.msg="💳 Payment successful (simulated). Order placed!";save();render()}
+function adv(id){S.orders.forEach(function(o){if(o.id==id&&o.st<2)o.st++});save();render()}
+function steps(st){return '<div class="steps">'+STEPS.map(function(s,i){return '<span class="'+(i<=st?"d":"")+'">'+s+'</span>'}).join("")+'</div>'}
+function farmer(){var h='<div class="card ai"><h2 style="margin-top:0">🎙️ Voice listing (Tamil)</h2><p class="sub">Press mic and say: “தக்காளி 50 கிலோ 30 ரூபாய்”</p><div class="row"><button class="mic" id="mic" onclick="listen()">🎤</button><button class="btn alt" onclick="demo()">Demo phrase</button></div>';
+if(S.said)h+='<p>🗣️ <b>'+S.said+'</b></p>';
+if(S.draft){var d=S.draft,r=rec(d.k);h+='<div class="card"><b>'+M[d.k].e+' '+d.k+'</b> <span class="tag">'+M[d.k].ta+'</span><br><label class="sub">Quantity (kg)</label><input id="pq" type="number" value="'+d.qty+'"><label class="sub">Price ₹/kg</label><input id="pp" type="number" value="'+(d.price||r.fair)+'"><p class="sub">🤖 AI price tip: market ₹'+M[d.k].p+'/kg. Fair range ₹'+r.lo+'–₹'+r.hi+', suggested ₹'+r.fair+'.</p><button class="btn" onclick="addP()">List product</button></div>'}
+h+='</div>';if(S.msg)h+='<div class="card">'+S.msg+'</div>';
+h+='<h2>My listings</h2>'+S.products.map(function(p){return '<div class="card row"><div>'+M[p.k].e+' <b>'+p.k+'</b><br><span class="sub">'+p.qty+' kg · ₹'+p.price+'/kg · '+p.loc+'</span></div></div>'}).join("");
+h+='<h2>Government schemes</h2><div class="card sub">• PM-KISAN: ₹6,000/year income support<br>• PMFBY: crop insurance<br>• e-NAM: online mandi access</div>';return h}
+function customer(){var h='<p class="sub">Fresh produce direct from farmers. Nearby first.</p>';
+h+=S.products.filter(function(p){return p.qty>0}).map(function(p){return '<div class="card row"><div>'+M[p.k].e+' <b>'+p.k+'</b> <span class="tag">'+p.loc+'</span><br><span class="sub">'+p.farmer+' · '+p.qty+' kg left</span><br><b>₹'+p.price+'/kg</b></div><button class="btn sm" onclick="addC('+p.id+')">+ Add'+(S.cart[p.id]?" ("+S.cart[p.id]+")":"")+'</button></div>'}).join("");
+var tot=0;Object.keys(S.cart).forEach(function(id){var p=S.products.filter(function(x){return x.id==id})[0];if(p)tot+=p.price*S.cart[id]});
+if(tot)h+='<div class="card row"><b>Total (1 kg each add): ₹'+tot+'</b><button class="btn" onclick="order()">Pay &amp; Order</button></div>';
+if(S.msg)h+='<div class="card">'+S.msg+'</div>';
+h+='<h2>Track orders</h2>'+(S.orders.length?S.orders.map(function(o){return '<div class="card">'+M[o.k].e+' '+o.k+' · '+o.qty+' kg · ₹'+o.total+steps(o.st)+'</div>'}).join(""):'<p class="sub">No orders yet.</p>');return h}
+function delivery(){var o=S.orders.filter(function(x){return x.st<2});
+var h='<p class="sub">Pick up from farmers, deliver to customers, earn per trip.</p>';
+h+=o.length?o.map(function(x){return '<div class="card"><div class="row"><div>'+M[x.k].e+' '+x.k+' · '+x.qty+' kg<br><span class="sub">Pickup: '+x.farmer+', '+x.loc+'</span><br><b>Earn ₹40</b></div><button class="btn sm" onclick="adv('+x.id+')">'+(x.st==0?"Mark picked up":"Mark delivered")+'</button></div>'+steps(x.st)+'</div>'}).join(""):'<div class="card sub">No active deliveries. Place an order in Customer tab.</div>';
+h+='<div class="card">Completed: <b>'+S.orders.filter(function(x){return x.st==2}).length+'</b> · Earnings: <b>₹'+S.orders.filter(function(x){return x.st==2}).length*40+'</b></div>';return h}
+function render(){$("tabs").innerHTML=[["farmer","👨‍🌾 Farmer"],["customer","🛒 Customer"],["delivery","🛵 Delivery"]].map(function(t){return '<button class="'+(S.tab==t[0]?"on":"")+'" onclick="S.tab=\''+t[0]+'\';S.msg=\'\';render()">'+t[1]+'</button>'}).join("");
+$("view").innerHTML=S.tab=="farmer"?farmer():S.tab=="customer"?customer():delivery()}
+render();
+</script></body></html>
